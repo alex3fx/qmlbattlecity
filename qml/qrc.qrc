@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Base.qml</file>
+        <file>BrickItem.qml</file>
+        <file>Bullet.qml</file>
+        <file>ConcreteItem.qml</file>
+        <file>ControlPanel.qml</file>
+        <file>Explosion.qml</file>
+        <file>main.qml</file>
+        <file>UserTank.qml</file>
+        <file>sounds/explosion.wav</file>
+        <file>sounds/shot.wav</file>
+        <file>sounds/userMoving.wav</file>
+        <file>img/board/armoredwall.png</file>
+        <file>img/board/brickwall.png</file>
+        <file>img/board/empty_traversable.png</file>
+        <file>img/base_destroyed.png</file>
+        <file>img/bullet.png</file>
+        <file>img/enemytank.png</file>
+        <file>img/explosion.png</file>
+        <file>img/flag.png</file>
+        <file>img/frag_icon.png</file>
+        <file>img/mybase.png</file>
+        <file>img/mytank.png</file>
+    </qresource>
+</RCC>
