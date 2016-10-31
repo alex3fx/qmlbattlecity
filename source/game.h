@@ -85,6 +85,8 @@ public:
     Q_PROPERTY(QString message READ getMessage WRITE setMessage NOTIFY messageChanged)
     QString getMessage(){return m_message;}
     void setMessage(const QString & msg) {m_message = msg; emit messageChanged();}
+
+
 public slots:
     void move();
 
@@ -110,7 +112,9 @@ private:
     bool checkBorders(GraphicItem * item);
     void initGame();
 
-    void think();
+    void update();
+    void updateBullet();
+    void reversEnemy();
 
     void createBullet(GraphicItem * item);
     void createExplosion(GraphicItem * item);

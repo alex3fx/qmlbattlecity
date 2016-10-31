@@ -7,6 +7,7 @@
 Game::Game(QObject *parent)
     : m_parent(parent)
     , m_objectCounter(10000000)
+    , m_controlKey(Qt::Key_unknown)
     , m_loopCounter(0)
     , m_lifesCounter(3)
     , m_fragsCounter(0)
@@ -18,13 +19,13 @@ Game::Game(QObject *parent)
     initGame();
     m_move_snd.setLoops(QSound::Infinite);
 
-    QTimer * timer = new QTimer();
+    QTimer * timer = new QTimer(this);
     connect(timer,SIGNAL(timeout()),this, SLOT(move()));
     timer->start(50);
 }
 
 void Game::move(){
-    think();
+    update();
     if(m_directionMap[m_player.at(0)->getObjectId()] == NONE)
         m_move_snd.stop();
     else if(m_move_snd.isFinished())
@@ -370,33 +371,8 @@ void hitBrick(PartedItem * brick, DIRECTION direction)
 }
 
 
-void Game::think()
+void Game::updateBullet()
 {
-    ++m_loopCounter;
-    if(m_controlKey == Qt::Key_Space)
-    {
-        if(m_canMove && m_lastPlayerFire < m_loopCounter - 5)
-        {
-            createBullet(m_player.at(0));
-            m_lastPlayerFire = m_loopCounter;
-        }
-        m_controlKey = Qt::Key_unknown;
-    }
-    for (auto enemy : m_enemy)
-    {
-        if(qrand()%10 == 0)
-            m_directionMap[enemy->getObjectId()] = static_cast<DIRECTION>(qrand()%4);
-        if(qrand()%100 == 0)
-            createBullet(enemy);
-        if(enemy->getPositionX()<=0)
-            m_directionMap[enemy->getObjectId()] = RIGHT;
-        else if(enemy->getPositionX()>=(m_width - enemy->getWidth()))
-            m_directionMap[enemy->getObjectId()] = LEFT;
-        else if(enemy->getPositionY()<=0)
-            m_directionMap[enemy->getObjectId()] = DOWN;
-        else if(enemy->getPositionY()>=(m_height - enemy->getHeight()))
-            m_directionMap[enemy->getObjectId()] = UP;
-    }
     for(auto bullet : m_bullet)
     {
         for(auto enemy : m_enemy)
@@ -496,6 +472,41 @@ void Game::think()
 
         }
     }
+}
+
+void Game::reversEnemy()
+{
+    for (auto enemy : m_enemy)
+    {
+        if(qrand()%10 == 0)
+            m_directionMap[enemy->getObjectId()] = static_cast<DIRECTION>(qrand()%4);
+        if(qrand()%100 == 0)
+            createBullet(enemy);
+        if(enemy->getPositionX()<=0)
+            m_directionMap[enemy->getObjectId()] = RIGHT;
+        else if(enemy->getPositionX()>=(m_width - enemy->getWidth()))
+            m_directionMap[enemy->getObjectId()] = LEFT;
+        else if(enemy->getPositionY()<=0)
+            m_directionMap[enemy->getObjectId()] = DOWN;
+        else if(enemy->getPositionY()>=(m_height - enemy->getHeight()))
+            m_directionMap[enemy->getObjectId()] = UP;
+    }
+}
+
+void Game::update()
+{
+    ++m_loopCounter;
+    if(m_controlKey == Qt::Key_Space)
+    {
+        if(m_canMove && m_lastPlayerFire < m_loopCounter - 5)
+        {
+            createBullet(m_player.at(0));
+            m_lastPlayerFire = m_loopCounter;
+        }
+        m_controlKey = Qt::Key_unknown;
+    }
+    reversEnemy();
+    updateBullet();
     for(auto explosion : m_explosion)
     {
         if(m_explosionMap[explosion->getObjectId()] < m_loopCounter - 2)
@@ -524,7 +535,7 @@ void Game::createBullet(GraphicItem * parent)
 
 void Game::createExplosion(GraphicItem *parent)
 {
-    AnimatedItem * explosion = new AnimatedItem(0);
+    AnimatedItem * explosion = new AnimatedItem(this);
     explosion->setObjectId(++m_objectCounter);
     explosion->setObjectImagePath("qrc:/img/explosion.png");
     explosion->updatePositionAndRotation(parent->getPositionX(),parent->getPositionY(),0);
@@ -537,7 +548,7 @@ void Game::createExplosion(GraphicItem *parent)
 
 void Game::createBrick(int x, int y)
 {
-    PartedItem * brick = new PartedItem(4,4,0);
+    PartedItem * brick = new PartedItem(4,4,this);
     brick->setObjectId(++m_objectCounter);
     brick->setObjectImagePath("qrc:/img/board/brickwall.png");
     brick->updatePositionAndRotation(x,y,0);
@@ -551,7 +562,7 @@ void Game::createBrick(int x, int y)
 
 void Game::createConcrete(int x, int y)
 {
-    PartedItem * brick = new PartedItem(2,2,0);
+    PartedItem * brick = new PartedItem(2,2,this);
     brick->setObjectId(++m_objectCounter);
     brick->setObjectImagePath("qrc:/img/board/armoredwall.png");
     brick->updatePositionAndRotation(x,y,0);
@@ -565,7 +576,7 @@ void Game::createConcrete(int x, int y)
 
 void Game::createBase(int x, int y)
 {
-    GraphicItem * base = new GraphicItem(0);
+    GraphicItem * base = new GraphicItem(this);
     base->setObjectId(++m_objectCounter);
     base->setObjectImagePath("qrc:/img/mybase.png");
     base->updatePositionAndRotation(x,y,0);
@@ -575,7 +586,7 @@ void Game::createBase(int x, int y)
 
 void Game::createPlayer(int x, int y)
 {
-    AnimatedItem * player = new AnimatedItem(0);
+    AnimatedItem * player = new AnimatedItem(this);
     player->setObjectId(0);
     player->setObjectImagePath("qrc:/img/mytank.png");
     player->updatePositionAndRotation(x,y,0);
@@ -586,7 +597,7 @@ void Game::createPlayer(int x, int y)
 
 void Game::createEnemy(int x, int y)
 {
-    AnimatedItem * enemy = new AnimatedItem(0);
+    AnimatedItem * enemy = new AnimatedItem(this);
     enemy->setObjectId(++m_objectCounter);
     enemy->setObjectImagePath("qrc:/img/enemytank.png");
     enemy->updatePositionAndRotation(x,y,0);
@@ -603,7 +614,7 @@ void Game::createOrUpdateFrags(int count)
     m_frags.clear();
     for(int i = 0; i < count; ++i)
     {
-        IconItem * frag = new IconItem(0);
+        IconItem * frag = new IconItem(this);
         frag->setObjectId(++m_objectCounter);
         frag->setObjectImagePath("qrc:/img/frag_icon.png");
         frag->updatePositionAndRotation(0,0,0);
@@ -677,7 +688,7 @@ int Game::getPartedDistance(GraphicItem *current, PartedItem *brick)
              (brick->getHeight()/brick->getRows()));
 
     DIRECTION direction = m_directionMap[current->getObjectId()];
-    int dst = 100;
+    int dst = 100;//it means too far from object
     switch (direction) {
     case UP:
         if(cLeftX>=oRightX || cRightX <= oLeftX)
@@ -704,9 +715,10 @@ int Game::getPartedDistance(GraphicItem *current, PartedItem *brick)
 }
 int Game::getDistance(GraphicItem *current, GraphicItem *other)
 {
+    int dst = 100;//it means too far from object
     DIRECTION direction = m_directionMap[current->getObjectId()];
     if(current->getObjectId() == other->getObjectId())
-        return 50;
+        return dst;
     int dx = current->getPositionX() - other->getPositionX();
     int dy = current->getPositionY() - other->getPositionY();
     int cX = current->getPositionX();
@@ -716,22 +728,22 @@ int Game::getDistance(GraphicItem *current, GraphicItem *other)
     switch (direction) {
     case UP:
         if(std::abs(dx)>=current->getWidth())
-            return 55;
+            return dst;
         return cY - oY - other->getHeight();
     case DOWN:
         if(std::abs(dx)>=current->getWidth())
-            return 55;
+            return dst;
         return oY - cY - current->getHeight();
     case LEFT:
         if(std::abs(dy)>=current->getHeight())
-            return 55;
+            return dst;
         return cX - oX - other->getWidth();
     case RIGHT:
         if(std::abs(dy)>=current->getHeight())
-            return 55;
+            return dst;
         return oX - cX - current->getWidth();
     default:
         break;
     }
-    return 0;
+    return dst;
 }
